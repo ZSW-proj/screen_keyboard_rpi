@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
-extern "C"
-{
-#   include <xdo.h>
-}
+// extern "C"
+// {
+// #   include <xdo.h>
+// }
 
 using namespace cv;
 using namespace std;
@@ -17,7 +17,7 @@ int thresh = 100;
 int max_thresh = 255;
 RNG rng(12345);
 
-Mat keyboard_screen;
+Mat screens[7];
 
 VideoCapture capture;
 const char* source_window1 = "Camera";
@@ -26,7 +26,18 @@ const char* source_window2 = "Keyboard";
 float wid_scr, hei_scr;
 float wid_key = 200.0f, hei_key = 200.0f;
 
-char keys[] = {'B', 'A', 'F', 'E', 'D', 'C'};
+char keys[][6] = {
+                    {'H','G','L','K','J','I'},
+                    {'B','A','F','E','D','C'},
+                    {'6','5',' ','9','8','7'},
+                    {'0','Z','4','3','2','1'},
+                    {'U','T','Y','X','W','V'},
+                    {'N','M','S','R','P','O'},
+                };
+
+int last_index;
+int duration;
+int active_screen;
 
 ///
 
@@ -37,18 +48,26 @@ void average_contour(vector<Point> contour, Point2f& p);
 void displayKeyboard(Point2f& p);
 float wider_angle(float alpha_i, int _x, int _y);
 
-void initXDO();
-void freeXDO();
+// void initXDO();
+// void freeXDO();
 
-void performClick(int code);
+// void performClick(int code);
+
 void translateToKey(float alpha);
 
 /** @function main */
 int main( int argc, char** argv )
 {
-  initXDO();
+  // initXDO();
 
-  keyboard_screen = imread("keyboard.png");
+  screens[0] = imread("keyboard.png");
+  screens[1] = imread("G-L.png");
+  screens[2] = imread("A-F.png");
+  screens[3] = imread("5-9,space.png");
+  screens[4] = imread("Z,0-4.png");
+  screens[5] = imread("T-Y.png");
+  screens[6] = imread("M-S.png");
+
   /// Load source image and convert it to gray
   capture.open( -1 );
   if ( ! capture.isOpened() ) { printf("--(!)Error opening video capture\n"); return -1; }
@@ -57,13 +76,16 @@ int main( int argc, char** argv )
   wid_scr = capture.get(CV_CAP_PROP_FRAME_WIDTH);
   hei_scr = capture.get(CV_CAP_PROP_FRAME_HEIGHT);
 
-  wid_key = keyboard_screen.cols;
-  hei_key = keyboard_screen.rows;
+  wid_key = screens[0].cols;
+  hei_key = screens[0].rows;
   // capture.read(src);
   // cvtColor( src, src_gray, CV_BGR2GRAY );
   // blur( src_gray, src_gray, Size(3,3) );
 
   /// Create Window
+
+  last_index = 0;
+  active_screen = 0;
 
   while (  capture.read(src) )
   {
@@ -78,7 +100,7 @@ int main( int argc, char** argv )
       if( (char)c == 27 ) { break; } // escape
   }
 
-  freeXDO();
+  // freeXDO();
 
   return 0;
 }
@@ -175,16 +197,17 @@ void displayKeyboard(Point2f& p)
   int x_key = _x_key + wid_key / 2;
   int y_key = hei_key / 2 - _y_key;
 
-  Mat keyboard_screen_view = keyboard_screen.clone();
+  //Mat keyboard_screen_view = keyboard_screen.clone();
   Point touch_point(x_key, y_key);
   Point middle_screen(wid_key/2, hei_key/2);
   Scalar color = Scalar(0, 0, 255);
 
-  line(keyboard_screen_view, touch_point, middle_screen, color, 5);
-
   translateToKey(alpha);
 
-  imshow(source_window2, keyboard_screen_view);
+  Mat active_screen_mat = screens[active_screen].clone();
+
+  line(active_screen_mat, touch_point, middle_screen, color, 5);
+  imshow(source_window2, active_screen_mat);
 }
 
 float wider_angle(float alpha_i, int _x, int _y)
@@ -198,32 +221,32 @@ float wider_angle(float alpha_i, int _x, int _y)
   return result;
 }
 
-xdo_t * xdo_context = nullptr;
+// xdo_t * xdo_context = nullptr;
 
-void initXDO()
-{
-  xdo_context = xdo_new(nullptr);
-  if (!xdo_context)
-  {
-      std::cerr << "failed to initialize libxdo." << std::endl;
-      exit(1);
-  }
-}
+// void initXDO()
+// {
+//   xdo_context = xdo_new(nullptr);
+//   if (!xdo_context)
+//   {
+//       std::cerr << "failed to initialize libxdo." << std::endl;
+//       exit(1);
+//   }
+// }
 
-void freeXDO()
-{
-  xdo_free(xdo_context);
-}
+// void freeXDO()
+// {
+//   xdo_free(xdo_context);
+// }
 
-void performClick(char c)
-{
-  char str[2] = { c, 0 };
-#ifdef __LINUX__
-  xdo_send_keysequence_window(xdo_context, CURRENTWINDOW, str, 0);
-#else
-  xdo_keysequence(xdo_context, CURRENTWINDOW, str, 0);
-#endif
-}
+// void performClick(char c)
+// {
+//   char str[2] = { c, 0 };
+// #ifdef __LINUX__
+//   xdo_send_keysequence_window(xdo_context, CURRENTWINDOW, str, 0);
+// #else
+//   xdo_keysequence(xdo_context, CURRENTWINDOW, str, 0);
+// #endif
+// }
 
 void translateToKey(float alpha)
 {
@@ -231,6 +254,27 @@ void translateToKey(float alpha)
   int index = alpha / (M_PI / 3);
   index = index % 6;
 
-  printf("KEY: %c, ALPHA: %f\n", keys[index], alpha);
-  performClick(keys[index]);
+  if (last_index != index)
+  {
+    duration = 0;
+    last_index = index;
+  }
+  else
+    duration++;
+
+  if (duration * 0.15 > 2.0)
+  {
+    duration = 0;
+    // zmiana planszy pliknięcie
+    if (active_screen == 0)
+      active_screen = index + 1;
+    else
+    {
+      fprintf(stderr, "%c", keys[active_screen-1][index]);
+      active_screen = 0;
+      //performClick(keys[index]);
+    }
+  }
+
+  //printf("DURATION: %d, LAST_INDEX: %d, INDEX: %d\n", duration, last_index, index);
 }
