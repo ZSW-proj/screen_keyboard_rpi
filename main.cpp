@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+extern "C"
+{
+#   include <xdo.h>
+}
 
 using namespace cv;
 using namespace std;
@@ -16,11 +20,15 @@ RNG rng(12345);
 Mat keyboard_screen;
 
 VideoCapture capture;
-char* source_window1 = "Camera";
-char* source_window2 = "Keyboard";
+const char* source_window1 = "Camera";
+const char* source_window2 = "Keyboard";
 
 float wid_scr, hei_scr;
 float wid_key = 200.0f, hei_key = 200.0f;
+
+char keys[] = {'B', 'A', 'F', 'E', 'D', 'C'};
+
+///
 
 /// Function header
 
@@ -29,9 +37,17 @@ void average_contour(vector<Point> contour, Point2f& p);
 void displayKeyboard(Point2f& p);
 float wider_angle(float alpha_i, int _x, int _y);
 
+void initXDO();
+void freeXDO();
+
+void performClick(int code);
+void translateToKey(float alpha);
+
 /** @function main */
 int main( int argc, char** argv )
 {
+  initXDO();
+
   keyboard_screen = imread("keyboard.png");
   /// Load source image and convert it to gray
   capture.open( -1 );
@@ -61,6 +77,8 @@ int main( int argc, char** argv )
       int c = waitKey(30);
       if( (char)c == 27 ) { break; } // escape
   }
+
+  freeXDO();
 
   return 0;
 }
@@ -139,6 +157,7 @@ void average_contour(vector<Point> contour, Point2f& p)
 void displayKeyboard(Point2f& p)
 {
   int _x = p.x - wid_scr / 2;
+  _x = -_x;
   int _y = hei_scr / 2 - p.y;
 
   int _r = sqrt(_x * _x + _y * _y);
@@ -146,7 +165,7 @@ void displayKeyboard(Point2f& p)
   float alpha_i = asin(abs(_y) / (float) _r);
   float alpha = wider_angle(alpha_i, _x, _y);
 
-  printf("DEBUG %f %f\n", alpha_i, alpha);
+  //printf("DEBUG %f %f\n", alpha_i, alpha);
 
   float R = 0.4 * min(wid_key, hei_key);
 
@@ -163,6 +182,8 @@ void displayKeyboard(Point2f& p)
 
   line(keyboard_screen_view, touch_point, middle_screen, color, 5);
 
+  translateToKey(alpha);
+
   imshow(source_window2, keyboard_screen_view);
 }
 
@@ -177,3 +198,39 @@ float wider_angle(float alpha_i, int _x, int _y)
   return result;
 }
 
+xdo_t * xdo_context = nullptr;
+
+void initXDO()
+{
+  xdo_context = xdo_new(nullptr);
+  if (!xdo_context)
+  {
+      std::cerr << "failed to initialize libxdo." << std::endl;
+      exit(1);
+  }
+}
+
+void freeXDO()
+{
+  xdo_free(xdo_context);
+}
+
+void performClick(char c)
+{
+  char str[2] = { c, 0 };
+#ifdef __LINUX__
+  xdo_send_keysequence_window(xdo_context, CURRENTWINDOW, str, 0);
+#else
+  xdo_keysequence(xdo_context, CURRENTWINDOW, str, 0);
+#endif
+}
+
+void translateToKey(float alpha)
+{
+  alpha += M_PI / 6;
+  int index = alpha / (M_PI / 3);
+  index = index % 6;
+
+  printf("KEY: %c, ALPHA: %f\n", keys[index], alpha);
+  performClick(keys[index]);
+}
