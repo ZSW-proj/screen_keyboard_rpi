@@ -44,7 +44,7 @@ int active_screen;
 /// Function header
 
 void detectAndDisplay(Mat src);
-void average_contour(vector<Point> contour, Point2f& p);
+void average_contour(const vector<Point> & contour, Point2f& p);
 void displayKeyboard(Point2f& p);
 float wider_angle(float alpha_i, int _x, int _y);
 
@@ -132,7 +132,7 @@ void detectAndDisplay(Mat src)
   findContours(color_hue_image.clone(), contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
   int max_area = 0;
-  int max_contour;
+  int max_contour = 0;
 
   for(int i=0; i < contours.size(); i++)
   {
@@ -148,7 +148,15 @@ void detectAndDisplay(Mat src)
   drawContours(src, contours, max_contour, color, 5, 8, hierarchy);
 
   Point2f middle_point;
-  average_contour(contours[max_contour], middle_point);
+  if (contours.empty())
+  {
+      middle_point.x = 0;
+      middle_point.y = 0;
+  }
+  else
+  {
+    average_contour(contours[max_contour], middle_point);
+  }
 
   circle(src, middle_point, 10, color2, -1);
 
@@ -161,7 +169,7 @@ void detectAndDisplay(Mat src)
 
 }
 
-void average_contour(vector<Point> contour, Point2f& p)
+void average_contour(const vector<Point> & contour, Point2f& p)
 {
   p.x = 0;
   p.y = 0;
