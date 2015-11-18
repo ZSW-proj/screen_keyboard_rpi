@@ -69,7 +69,7 @@ int main( int argc, char** argv )
   screens[6] = imread("M-S.png");
 
   /// Load source image and convert it to gray
-  capture.open( -1 );
+  capture.open( argc == 1 ? -1 : atoi(argv[1]) );
   if ( ! capture.isOpened() ) { printf("--(!)Error opening video capture\n"); return -1; }
   waitKey(100);
 
