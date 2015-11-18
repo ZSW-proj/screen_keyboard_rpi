@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
-// extern "C"
-// {
-// #   include <xdo.h>
-// }
+extern "C"
+{
+#   include <xdo.h>
+}
 
 using namespace cv;
 using namespace std;
@@ -48,8 +48,8 @@ void average_contour(const vector<Point> & contour, Point2f& p);
 void displayKeyboard(Point2f& p);
 float wider_angle(float alpha_i, int _x, int _y);
 
-// void initXDO();
-// void freeXDO();
+void initXDO();
+void freeXDO();
 
 // void performClick(int code);
 
@@ -58,7 +58,7 @@ void translateToKey(float alpha);
 /** @function main */
 int main( int argc, char** argv )
 {
-  // initXDO();
+  initXDO();
 
   screens[0] = imread("keyboard.png");
   screens[1] = imread("G-L.png");
@@ -100,7 +100,7 @@ int main( int argc, char** argv )
       if( (char)c == 27 ) { break; } // escape
   }
 
-  // freeXDO();
+  freeXDO();
 
   return 0;
 }
@@ -200,14 +200,10 @@ void displayKeyboard(Point2f& p)
   // powinno ustawić długość strzałki zgodnie z wychyleniem
   float R;// = 0.4 * min(wid_key, hei_key);
   R = _r;
-  
-  // warunek na zbyt małe wychylenie strzałki
-  if (_r < 0.2 * min(wid_key, hei_key) ) 
-	return;
 
-  
-  
-  
+  // warunek na zbyt małe wychylenie strzałki
+  if (_r < 0.2 * min(wid_key, hei_key) )
+    return;
 
   int _x_key = R * cos(alpha);
   int _y_key = R * sin(alpha);
@@ -239,32 +235,28 @@ float wider_angle(float alpha_i, int _x, int _y)
   return result;
 }
 
-// xdo_t * xdo_context = nullptr;
+xdo_t * xdo_context = nullptr;
 
-// void initXDO()
-// {
-//   xdo_context = xdo_new(nullptr);
-//   if (!xdo_context)
-//   {
-//       std::cerr << "failed to initialize libxdo." << std::endl;
-//       exit(1);
-//   }
-// }
+void initXDO()
+{
+  xdo_context = xdo_new(nullptr);
+  if (!xdo_context)
+  {
+      std::cerr << "failed to initialize libxdo." << std::endl;
+      exit(1);
+  }
+}
 
-// void freeXDO()
-// {
-//   xdo_free(xdo_context);
-// }
+void freeXDO()
+{
+  xdo_free(xdo_context);
+}
 
-// void performClick(char c)
-// {
-//   char str[2] = { c, 0 };
-// #ifdef __LINUX__
-//   xdo_send_keysequence_window(xdo_context, CURRENTWINDOW, str, 0);
-// #else
-//   xdo_keysequence(xdo_context, CURRENTWINDOW, str, 0);
-// #endif
-// }
+void performClick(char c)
+{
+  char str[2] = { c, 0 };
+  xdo_enter_text_window(xdo_context, CURRENTWINDOW, str, 0);
+}
 
 void translateToKey(float alpha)
 {
@@ -289,8 +281,8 @@ void translateToKey(float alpha)
     else
     {
       fprintf(stderr, "%c", keys[active_screen-1][index]);
+      performClick(keys[active_screen-1][index]);
       active_screen = 0;
-      //performClick(keys[index]);
     }
   }
 
