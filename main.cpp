@@ -189,7 +189,17 @@ void displayKeyboard(Point2f& p)
 
   //printf("DEBUG %f %f\n", alpha_i, alpha);
 
-  float R = 0.4 * min(wid_key, hei_key);
+  // powinno ustawić długość strzałki zgodnie z wychyleniem
+  float R;// = 0.4 * min(wid_key, hei_key);
+  R = _r;
+  
+  // warunek na zbyt małe wychylenie strzałki
+  if (_r < 0.2 * min(wid_key, hei_key) ) 
+	return;
+
+  
+  
+  
 
   int _x_key = R * cos(alpha);
   int _y_key = R * sin(alpha);
@@ -265,7 +275,7 @@ void translateToKey(float alpha)
   if (duration * 0.15 > 2.0)
   {
     duration = 0;
-    // zmiana planszy pliknięcie
+    // zmiana planszy lub pliknięcie
     if (active_screen == 0)
       active_screen = index + 1;
     else
