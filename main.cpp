@@ -9,6 +9,8 @@ extern "C"
 #   include <xdo.h>
 }
 
+#define SPEED 0.15
+
 using namespace cv;
 using namespace std;
 
@@ -25,6 +27,8 @@ const char* source_window2 = "Keyboard";
 
 float wid_scr, hei_scr;
 float wid_key = 200.0f, hei_key = 200.0f;
+
+int max_area;
 
 char keys[][6] = {
                     {'H','G','L','K','J','I'},
@@ -102,6 +106,8 @@ int main( int argc, char** argv )
 
   freeXDO();
 
+  printf("\n\n\n");
+
   return 0;
 }
 
@@ -131,7 +137,7 @@ void detectAndDisplay(Mat src)
 
   findContours(color_hue_image.clone(), contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
-  int max_area = 0;
+  max_area = 0;
   int max_contour = 0;
 
   for(int i=0; i < contours.size(); i++)
@@ -143,6 +149,8 @@ void detectAndDisplay(Mat src)
       max_contour = i;
     }
   }
+
+  //printf("MAXAREA: %d\n", max_area);
 
   //printf("MAXAREA: %d, MAXCONTOUR: %d\n", max_area, max_contour);
   drawContours(src, contours, max_contour, color, 5, 8, hierarchy);
@@ -186,6 +194,11 @@ void average_contour(const vector<Point> & contour, Point2f& p)
 
 void displayKeyboard(Point2f& p)
 {
+  Mat active_screen_mat = screens[active_screen].clone();
+  imshow(source_window2, active_screen_mat);
+
+  if (max_area < 1000) return;
+
   int _x = p.x - wid_scr / 2;
   _x = -_x;
   int _y = hei_scr / 2 - p.y;
@@ -218,7 +231,7 @@ void displayKeyboard(Point2f& p)
 
   translateToKey(alpha);
 
-  Mat active_screen_mat = screens[active_screen].clone();
+  //Mat active_screen_mat = screens[active_screen].clone();
 
   line(active_screen_mat, touch_point, middle_screen, color, 5);
   imshow(source_window2, active_screen_mat);
@@ -272,7 +285,7 @@ void translateToKey(float alpha)
   else
     duration++;
 
-  if (duration * 0.15 > 2.0)
+  if (duration * SPEED > 2.0)
   {
     duration = 0;
     // zmiana planszy lub pliknięcie
